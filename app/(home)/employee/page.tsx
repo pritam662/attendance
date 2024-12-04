@@ -4,7 +4,6 @@ import EmployeeTable from "@/components/employee/EmployeeTable";
 import Breadcrumbs from "@/components/components/Breadcrumbs";
 import { useAppSelector } from "@/redux/store";
 
-
 // Define prop types for AddEmployeeForm
 interface AddEmployeeFormProps {
   onClose: () => void; // onClose is a function with no arguments and no return value
@@ -16,6 +15,9 @@ function AddEmployeeForm({ onClose }: AddEmployeeFormProps) {
   const [employeeName, setEmployeeName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
+  const [bufferTime, setBufferTime] = useState("");
+  const [workDay, setWorkDay] = useState("1"); // Default to "1"
   const [natureOfTime, setTimingType] = useState("Flexible"); // Default to "Flexible"
   const [role, setRole] = useState("");
   const [shiftType, setShiftType] = useState("Day"); // Default to "Day"
@@ -23,21 +25,27 @@ function AddEmployeeForm({ onClose }: AddEmployeeFormProps) {
   // Submit handler to call the backend API
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    console.log(user)
+  
+    console.log(user);
     const formattedCheckIn = new Date(`1970-01-01T${checkIn}`).toISOString();
-
+    const formattedCheckOut = new Date(`1970-01-01T${checkOut}`).toISOString();
+  
     const employeeData = {
       employeeName,
       employeeNumber: phoneNumber,
       employerNumber: user?.number,
-      checkIn: formattedCheckIn, // Use the corrected format
+      checkIn: formattedCheckIn,
+      checkOut: formattedCheckOut,
+      bufferTime: Number(bufferTime), // Make sure it's a number
+      workDays: workDay, // Correct this from 'workDay' to 'workDays'
       natureOfTime,
       role,
       shiftType,
     };
     
-    
+  
+    console.log("Final employeeData payload:", employeeData);
+  
     try {
       const response = await fetch("/api/employees", {
         method: "POST",
@@ -46,23 +54,21 @@ function AddEmployeeForm({ onClose }: AddEmployeeFormProps) {
         },
         body: JSON.stringify(employeeData),
       });
-
+  
       if (response.ok) {
         const result = await response.json();
         alert(result.message || "Employee added successfully");
         onClose(); // Close the form after submission
       } else {
         const error = await response.json();
+        console.error("API error:", error);
         alert(error.error || "Failed to add employee");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Network error:", err);
       alert("Something went wrong. Please try again.");
     }
-    console.log("Formatted checkIn:", formattedCheckIn);
-
   };
-  
 
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
@@ -81,35 +87,69 @@ function AddEmployeeForm({ onClose }: AddEmployeeFormProps) {
             />
           </div>
           <div>
-  <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-  <input
-    type="text" // text type will allow number handling with restrictions
-    value={phoneNumber}
-    onChange={(e) => {
-      // Only allow numbers
-      const value = e.target.value;
-      if (/^\d*$/.test(value)) { // Regex ensures only digits
-        setPhoneNumber(value);
-      }
-    }}
-    className="mt-1 p-2 border border-gray-300 rounded-md w-full"
-    required
-    maxLength={10} // Maximum length set to 10
-    placeholder="Enter number"
-  />
-</div>
-
-
+            <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+            <input
+              type="text"
+              value={phoneNumber}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^\d*$/.test(value)) {
+                  setPhoneNumber(value);
+                }
+              }}
+              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              required
+              maxLength={10}
+              placeholder="Enter number"
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Check In Time</label>
             <input
               type="time"
               value={checkIn}
               onChange={(e) => setCheckIn(e.target.value)}
-              className="mt-1 p-2 border border-gray-300 rounded-md w-full appearance-none scrollbar-thumb-gray-500 scrollbar-track-gray-300 scrollbar-thin"
+              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
               required
-              
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Check Out Time</label>
+            <input
+              type="time"
+              value={checkOut}
+              onChange={(e) => setCheckOut(e.target.value)}
+              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Buffer Time (minutes)</label>
+            <input
+              type="number"
+              value={bufferTime}
+              onChange={(e) => setBufferTime(e.target.value)}
+              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              placeholder="Enter buffer time in minutes"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Work Day</label>
+            <select
+              value={workDay}
+              onChange={(e) => setWorkDay(e.target.value)}
+              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              required
+            >
+              <option value="1">1 (Monday)</option>
+              <option value="2">2 (Tuesday)</option>
+              <option value="3">3 (Wednesday)</option>
+              <option value="4">4 (Thursday)</option>
+              <option value="5">5 (Friday)</option>
+              <option value="6">6 (Saturday)</option>
+              <option value="7">7 (Sunday)</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Timing Type</label>
@@ -122,22 +162,20 @@ function AddEmployeeForm({ onClose }: AddEmployeeFormProps) {
               <option value="Flexible">Flexible</option>
               <option value="Fixed">Fixed</option>
             </select>
-            <div>
-  <label className="block text-sm font-medium text-gray-700">Role</label>
-  <select
-    value={role}
-    onChange={(e) => setRole(e.target.value)}
-    className="mt-1 p-2 border border-gray-300 rounded-md w-full"
-    required
-  >
-    <option value="">Select Role</option>
-    <option value="employee">Employee</option>
-    <option value="coowner">Co-owner</option>
-    <option value="hod">HOD</option>
-  </select>
-</div>
-
-
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              required
+            >
+              <option value="">Select Role</option>
+              <option value="employee">Employee</option>
+              <option value="coowner">Co-owner</option>
+              <option value="hod">HOD</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Shift Type</label>
@@ -151,7 +189,6 @@ function AddEmployeeForm({ onClose }: AddEmployeeFormProps) {
               <option value="Night">Night</option>
             </select>
           </div>
-
           <div className="flex justify-end space-x-4 mt-4">
             <button
               type="button"
@@ -202,15 +239,12 @@ function Page() {
           Add Employee
         </button>
       </div>
-
       <div>
         <EmployeeTable />
       </div>
-
       {isFormOpen && <AddEmployeeForm onClose={handleCloseForm} />}
     </div>
   );
 }
 
 export default Page;
-

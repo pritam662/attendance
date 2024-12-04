@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MongoClient } from "mongodb";
 
-// This function will handle adding a new employee to the database.
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
@@ -12,19 +11,25 @@ export async function POST(req: NextRequest) {
       employeeNumber,
       employerNumber,
       checkIn,
+      checkOut,
       natureOfTime,
       role,
+      bufferTime,
       shiftType,
+      workDays,
     } = body;
 
-    console.log(body);
+    console.log("Request Body:", body);
 
     // Validate incoming data
     if (
       !employeeName ||
       !employeeNumber ||
       !checkIn ||
+      !checkOut ||
+      !bufferTime ||
       !role ||
+      !workDays ||
       !shiftType
     ) {
       return NextResponse.json(
@@ -62,6 +67,7 @@ export async function POST(req: NextRequest) {
       employeeNumber,
       employerNumber,
       checkIn: new Date(checkIn), // Convert directly to Date object
+      checkOut: new Date(checkOut),
       natureOfTime,
       role,
       shiftType,
@@ -70,7 +76,8 @@ export async function POST(req: NextRequest) {
       companyName: employer.companyName,
       isActive: true, // Default values as shown in example
       rights: [],
-      workDays: [],
+      workDays,
+      bufferTime:Number(bufferTime),
       proof: {},
       locations: [],
       language: "English",
@@ -98,6 +105,7 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
 
 // New DELETE route to delete an employee by employeeNumber
 export async function DELETE(req: NextRequest) {
